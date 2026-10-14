@@ -40,3 +40,5 @@ jobs:
           node test/smoke-http.mjs
           node test/e2e-authoring.mjs
           node test/golden-flows.mjs
+          # Skips itself on a tenant without the appmixer.ai.mcptools module.
+          node test/e2e-gateway.mjs

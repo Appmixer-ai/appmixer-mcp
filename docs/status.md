@@ -28,7 +28,7 @@ published by MCP Gateway components. It runs over **stdio**, over
 session cap, rate limiting), and ships as an **MCPB bundle** for Claude
 Desktop.
 
-Verification: 66 unit tests, four live suites against a test tenant in CI
+Verification: 75 unit tests, five live suites against a test tenant in CI
 (stdio and HTTP smoke, end-to-end authoring, golden descriptors), and 14 LLM
 eval tasks scoring real agents — 14/14 on both Sonnet and Haiku.
 

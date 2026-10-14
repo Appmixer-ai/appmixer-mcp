@@ -49,7 +49,7 @@ Complete rewrite in TypeScript on the current `@modelcontextprotocol/sdk`.
   `clone_flow`, and `list_modifiers` for the tenant's `g_*` catalogue.
 - `create_flow` and `update_flow` accept `custom_fields` (which `list_flows`
   can filter on) and `stage`.
-- Test harness: 66 unit tests, live smoke/e2e/golden suites wired into CI,
+- Test harness: 75 unit tests, live smoke/e2e/golden/gateway suites wired into CI,
   and an LLM eval suite (`evals/`) scoring real agents on 14 flow-building
   tasks.
 

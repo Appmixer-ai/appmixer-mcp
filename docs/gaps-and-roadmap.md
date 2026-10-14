@@ -29,7 +29,7 @@ architectural — the core did not have to change.
 | Output discipline | **strong** | pagination, projections, per-result caps, summary/detail modes |
 | Platform API coverage | **good** | flows, components, accounts, logs, dead-letter queue, data stores, versions, modifiers; no files or telemetry — see below |
 | Flow authoring | **strong** | guide (tool + resource), server-side validate loop, variables with leaf paths, dry-run, dynamic options, account binding, placeholder IDs |
-| Testing | **strong** | 66 unit tests, 4 live suites in CI, 14 eval tasks measured on two models (14/14 both) |
+| Testing | **strong** | 75 unit tests, 5 live suites in CI, 14 eval tasks measured on two models (14/14 both) |
 | Transports | **good** | stdio + streamable HTTP (sessions, env/bearer, Origin allowlist) + MCPB bundle; no SSE resumability, in-memory sessions only |
 | Protocol feature coverage | **fair** | tools + one resource + cancellation; no structured output, progress, prompts, logging notifications, elicitation |
 | HTTP hardening | **good** | token verified before session, per-session binding, 4 MB cap, session cap, per-client rate limit, rejected-token cache |
@@ -133,8 +133,11 @@ this already exists — `TOOLS` splits `api` from `mcpgateway` today.
 
 ### Known and accepted
 
-- **Gateway tools have no live test** until `appmixer.ai.mcptools` merges
-  (connectors #1117); unit tests cover the manager. Tracked in phase 3b.
+- **The gateway live test skips itself on a tenant without the
+  `appmixer.ai.mcptools` module.** The module merged (connectors #1117) and
+  runs on the dev instance, so `test/e2e-gateway.mjs` covers the lifecycle
+  there; on our own test tenant it is a no-op until the CI secrets move. See
+  [`status.md`](status.md).
 - **The eval runner under-reports cost on a task timeout**: the `result`
   event never arrives, so the missing cost counts as zero. Every run so far
   completed, which makes this a note-level fix rather than a priority.

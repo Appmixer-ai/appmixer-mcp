@@ -186,6 +186,8 @@ npm run dev         # run from sources (tsx)
 # Live tests against a real tenant:
 APPMIXER_BASE_URL=... APPMIXER_USERNAME=... APPMIXER_PASSWORD=... node test/smoke.mjs
 APPMIXER_BASE_URL=... APPMIXER_USERNAME=... APPMIXER_PASSWORD=... node test/e2e-authoring.mjs
+# Gateway lifecycle — needs the appmixer.ai.mcptools module; skips without it:
+APPMIXER_BASE_URL=... APPMIXER_USERNAME=... APPMIXER_PASSWORD=... node test/e2e-gateway.mjs
 
 # After editing docs/flow-authoring-guide.md, regenerate the embedded copy:
 npm run gen:guide
