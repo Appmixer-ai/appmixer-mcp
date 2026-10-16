@@ -1,0 +1,98 @@
+{
+    "$schema": "https://raw.githubusercontent.com/anthropics/mcpb/main/schemas/mcpb-manifest-v0.4.schema.json",
+    "manifest_version": "0.4",
+    "name": "appmixer-mcp",
+    "display_name": "Appmixer",
+    "version": "2.0.0",
+    "description": "Build, run and observe Appmixer automation flows from your MCP client.",
+    "long_description": "Connects your Appmixer tenant to an MCP client. List, start, stop and troubleshoot flows; inspect execution logs; send app events. Build new automations from a natural-language brief: the server ships an Appmixer flow authoring guide, exposes the connector and component catalogue, validates flows server-side and can dry-run a component before the flow is started. Flows containing a running \"MCP Gateway\" component contribute their own tools to the session.\n\nRequires an Appmixer tenant and a user account. Prefer an access token over a username and password; a dedicated non-admin user keeps the token's reach limited.",
+    "author": {
+        "name": "Appmixer",
+        "url": "https://www.appmixer.com"
+    },
+    "homepage": "https://www.appmixer.com",
+    "documentation": "https://github.com/Appmixer-ai/appmixer-mcp#readme",
+    "support": "https://github.com/Appmixer-ai/appmixer-mcp/issues",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/Appmixer-ai/appmixer-mcp"
+    },
+    "license": "MIT",
+    "keywords": [
+        "appmixer",
+        "automation",
+        "workflow",
+        "integration",
+        "no-code"
+    ],
+    "server": {
+        "type": "node",
+        "entry_point": "server/index.mjs",
+        "mcp_config": {
+            "command": "node",
+            "args": ["${__dirname}/server/index.mjs"],
+            "env": {
+                "APPMIXER_BASE_URL": "${user_config.base_url}",
+                "APPMIXER_ACCESS_TOKEN": "${user_config.access_token}",
+                "APPMIXER_USERNAME": "${user_config.username}",
+                "APPMIXER_PASSWORD": "${user_config.password}",
+                "TOOLS": "${user_config.tools}"
+            }
+        }
+    },
+    "user_config": {
+        "base_url": {
+            "type": "string",
+            "title": "Appmixer API URL",
+            "description": "Your tenant's API URL, for example https://api.YOUR_TENANT.appmixer.cloud",
+            "required": true
+        },
+        "access_token": {
+            "type": "string",
+            "title": "Access token",
+            "description": "Appmixer access token. Recommended. Leave empty to sign in with a username and password instead.",
+            "sensitive": true,
+            "required": false
+        },
+        "username": {
+            "type": "string",
+            "title": "Username",
+            "description": "Appmixer username. Only needed without an access token, or to let the server renew an expired one automatically.",
+            "required": false
+        },
+        "password": {
+            "type": "string",
+            "title": "Password",
+            "description": "Appmixer password. Only needed together with the username.",
+            "sensitive": true,
+            "required": false
+        },
+        "tools": {
+            "type": "string",
+            "title": "Enabled tool groups",
+            "description": "Comma-separated: \"api\" for flow and authoring tools, \"mcpgateway\" for tools published by MCP Gateway components in your flows.",
+            "default": "api,mcpgateway",
+            "required": false
+        }
+    },
+    "tools_generated": true,
+    "tools": [
+        { "name": "list_flows", "description": "List flows in your Appmixer tenant." },
+        { "name": "get_flow", "description": "Read a flow's metadata, components and descriptor." },
+        { "name": "get_flow_logs", "description": "Read a flow's execution logs." },
+        { "name": "start_flow", "description": "Start a flow." },
+        { "name": "stop_flow", "description": "Stop a running flow." },
+        { "name": "create_flow", "description": "Create a new flow from a flow descriptor." },
+        { "name": "validate_flow", "description": "Validate a flow server-side." },
+        { "name": "test_flow", "description": "Dry-run a component with sample input." },
+        { "name": "get_components", "description": "Inspect connector components, their ports and fields." },
+        { "name": "send_app_event", "description": "Send an app event to your running flows." }
+    ],
+    "compatibility": {
+        "claude_desktop": ">=0.10.0",
+        "platforms": ["darwin", "win32", "linux"],
+        "runtimes": {
+            "node": ">=20"
+        }
+    }
+}

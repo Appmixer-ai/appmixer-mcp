@@ -1,0 +1,44 @@
+name: CI
+
+on:
+  push:
+    # Feature branches too, so work gets CI signal before it reaches a PR —
+    # a fork's pushes never trigger the base repository's checks.
+    branches: [main, 'feat/**', 'fix/**']
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: npm test
+
+      # Builds the bundle and validates mcpb/manifest.json against the schema.
+      - run: npm run build:mcpb
+
+      # Live smoke test against a real Appmixer tenant. Runs only when the
+      # repository has the APPMIXER_* secrets configured (skipped on forks).
+      - name: Live smoke test
+        env:
+          APPMIXER_BASE_URL: ${{ secrets.APPMIXER_BASE_URL }}
+          APPMIXER_USERNAME: ${{ secrets.APPMIXER_USERNAME }}
+          APPMIXER_PASSWORD: ${{ secrets.APPMIXER_PASSWORD }}
+        run: |
+          if [ -z "$APPMIXER_BASE_URL" ]; then
+            echo "APPMIXER_* secrets not configured; skipping live smoke test."
+            exit 0
+          fi
+          node test/smoke.mjs
+          node test/smoke-http.mjs
+          node test/e2e-authoring.mjs
+          node test/golden-flows.mjs
+          # Skips itself on a tenant without the appmixer.ai.mcptools module.
+          node test/e2e-gateway.mjs

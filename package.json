@@ -1,25 +1,58 @@
 {
     "name": "appmixer-mcp",
-    "version": "1.0.8",
-    "main": "index.js",
+    "version": "2.0.0",
+    "description": "MCP server for Appmixer — control, observe and (soon) build Appmixer flows from any MCP client.",
+    "type": "module",
+    "main": "dist/index.js",
     "bin": {
-        "appmixer-mcp": "./index.js"
+        "appmixer-mcp": "dist/index.js",
+        "appmixer-mcp-http": "dist/http-main.js"
     },
-    "homepage": "https://github.com/clientIO/appmixer-mcp",
+    "files": [
+        "dist",
+        "README.md",
+        "LICENSE"
+    ],
+    "engines": {
+        "node": ">=20"
+    },
+    "scripts": {
+        "build": "npm run gen:version && tsc -p tsconfig.json",
+        "gen:guide": "node scripts/gen-guide.mjs",
+        "gen:version": "node scripts/gen-version.mjs",
+        "build:mcpb": "node scripts/build-mcpb.mjs",
+        "prepare": "node scripts/prepare.mjs",
+        "dev": "tsx src/index.ts",
+        "test": "vitest run",
+        "test:watch": "vitest",
+        "prepublishOnly": "npm run build && npm test"
+    },
+    "homepage": "https://github.com/Appmixer-ai/appmixer-mcp",
     "repository": {
         "type": "git",
-        "url": "git+https://github.com/clientIO/appmixer-mcp.git"
+        "url": "git+https://github.com/Appmixer-ai/appmixer-mcp.git"
     },
-    "bugs": "https://github.com/clientIO/appmixer-mcp/issues",
-    "scripts": {
-        "test": "echo \"Error: no test specified\" && exit 1"
-    },
-    "author": "",
-    "license": "Appmixer License",
-    "description": "",
-    "type": "module",
+    "bugs": "https://github.com/Appmixer-ai/appmixer-mcp/issues",
+    "keywords": [
+        "mcp",
+        "model-context-protocol",
+        "appmixer",
+        "automation",
+        "workflow"
+    ],
+    "license": "MIT",
     "dependencies": {
-        "@modelcontextprotocol/sdk": "1.12.3",
-        "eventsource": "4.0.0"
+        "@modelcontextprotocol/sdk": "^1.30.0",
+        "eventsource": "^3.0.2",
+        "express": "^5.2.1",
+        "zod": "^4.4.3"
+    },
+    "devDependencies": {
+        "@types/express": "^5.0.6",
+        "@types/node": "^22.0.0",
+        "esbuild": "^0.28.2",
+        "tsx": "^4.19.0",
+        "typescript": "^5.7.0",
+        "vitest": "^4.1.10"
     }
 }

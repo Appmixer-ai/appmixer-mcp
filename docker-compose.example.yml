@@ -1,0 +1,23 @@
+# Example: self-hosted Appmixer MCP server next to your tenant.
+# Multi-user (bearer) mode: every MCP client authenticates with its own
+# Appmixer access token via the Authorization header.
+#
+#   docker compose -f docker-compose.example.yml up -d
+#
+# Put a TLS-terminating reverse proxy (Caddy, nginx, Traefik) in front and
+# point MCP clients at https://your-host/mcp with
+# "Authorization: Bearer <appmixer-token>".
+services:
+  appmixer-mcp:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      APPMIXER_BASE_URL: https://api.YOUR_TENANT.appmixer.cloud
+      MCP_AUTH_MODE: bearer
+      # Gateway tools need the mcptools plugin on the tenant; disable the
+      # group entirely with TOOLS=api if the plugin is not installed.
+      TOOLS: api,mcpgateway
+      # Browser-based MCP clients only; leave empty to reject all origins.
+      MCP_ALLOWED_ORIGINS: ""
+    restart: unless-stopped

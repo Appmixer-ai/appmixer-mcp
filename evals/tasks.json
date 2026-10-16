@@ -1,0 +1,95 @@
+[
+    {
+        "id": "simple-event-variable",
+        "prompt": "Build an Appmixer flow: when the app event \"new-user\" arrives (example data: {\"email\": \"john@example.com\"}), store the email in a variable named userEmail.",
+        "expectComponents": ["appevents.OnAppEvent", "controls.SetVariable"]
+    },
+    {
+        "id": "scheduler-http-get",
+        "prompt": "Build an Appmixer flow that every day at 9:00 UTC performs an HTTP GET request to https://example.com/health.",
+        "expectComponents": ["timers.Scheduler", "http.Get"]
+    },
+    {
+        "id": "condition-branching",
+        "prompt": "Build an Appmixer flow: on app event \"order\" (example data: {\"amount\": 250, \"customer\": \"ACME\"}), if the amount is greater than 1000, set a variable bigOrder with the customer name; otherwise set a variable smallOrder with the customer name.",
+        "expectComponents": ["appevents.OnAppEvent", "controls.SetVariable"],
+        "expectAnyComponent": ["controls.Condition", "filters.GreaterThan"]
+    },
+    {
+        "id": "modifier-function",
+        "prompt": "Build an Appmixer flow: on app event \"message\" (example data: {\"text\": \"hello world\"}), set a variable textLength containing the number of characters of the text field.",
+        "expectComponents": ["appevents.OnAppEvent", "controls.SetVariable"],
+        "expectDescriptorIncludes": ["g_length"]
+    },
+    {
+        "id": "webhook-response",
+        "prompt": "Build an Appmixer flow that exposes a webhook; when the webhook receives a request, respond to the caller with a JSON body {\"status\": \"received\"}.",
+        "expectComponents": ["http."],
+        "expectAnyComponent": ["http.Response"]
+    },
+    {
+        "id": "two-step-chain",
+        "prompt": "Build an Appmixer flow: on app event \"ping\" (example data: {\"msg\": \"hi\"}), first set a variable original with the msg value, then in a second, separate step set another variable copy with the same msg value. The two steps must be two chained components.",
+        "expectComponents": ["appevents.OnAppEvent", "controls.SetVariable"],
+        "minComponents": 3
+    },
+    {
+        "id": "error-handling",
+        "prompt": "Build an Appmixer flow: every 60 minutes perform an HTTP GET to https://example.com/api. Configure the HTTP step so that when it fails, it does NOT auto-retry and routes the error to its error port, where a variable failureMessage is set to the error message.",
+        "expectComponents": ["http.Get", "controls.SetVariable"],
+        "expectDescriptorIncludes": ["errorPort", "\"error\""]
+    },
+    {
+        "id": "each-loop",
+        "prompt": "Build an Appmixer flow: on app event \"batch\" (example data: {\"items\": [{\"sku\": \"X1\", \"qty\": 2}]}), iterate over the items array and for each item set a variable currentSku with that item's sku.",
+        "expectComponents": ["appevents.OnAppEvent", "controls.Each", "controls.SetVariable"],
+        "expectDescriptorIncludes": [".item.value.sku"]
+    },
+    {
+        "id": "fan-in-join",
+        "prompt": "Build an Appmixer flow: on app event \"route\" (example data: {\"level\": \"high\", \"note\": \"check this\"}), branch on whether level equals \"high\". Both branches must continue into one and the same final step, which sets a variable handled to the note value.",
+        "expectComponents": ["appevents.OnAppEvent", "controls.SetVariable"],
+        "expectAnyComponent": ["controls.Condition", "filters."],
+        "expectDescriptorIncludes": ["controls.Join"]
+    },
+    {
+        "id": "contains-filter",
+        "prompt": "Build an Appmixer flow: on app event \"signup\" (example data: {\"email\": \"jane@company.com\"}), only when the email contains \"@company.com\", set a variable companySignup with the email.",
+        "expectComponents": ["appevents.OnAppEvent", "controls.SetVariable"],
+        "expectAnyComponent": ["controls.Condition", "filters."]
+    },
+    {
+        "id": "slack-connector",
+        "prompt": "Build an Appmixer flow: on app event \"notify\" (example data: {\"text\": \"deploy finished\"}), post that text to my Slack channel named \"new-channel\". Use my connected Slack account.",
+        "expectComponents": ["appevents.OnAppEvent", "slack.list.SendChannelMessage"],
+        "expectDescriptorIncludes": ["C09BF6M2XPG"],
+        "expectAccountAssigned": true,
+        "accountBindingRequired": true
+    },
+    {
+        "id": "edit-append-step",
+        "prompt": "This existing flow stores the customer name from the \"edit-append\" app event. Add a second step after the existing one that stores the amount from the same event in a variable named orderAmount. Leave the rest of the flow as it is.",
+        "fixture": "twoStepFlow",
+        "expectComponents": ["appevents.OnAppEvent", "controls.SetVariable"],
+        "expectDescriptorIncludes": ["orderAmount", ".out.data.amount"],
+        "expectPreservedComponentIds": true,
+        "expectPreservedLayout": true,
+        "minComponents": 3
+    },
+    {
+        "id": "edit-repair-variable",
+        "prompt": "This existing flow does not pass validation. Find out why and fix it, changing as little as possible.",
+        "fixture": "brokenVariableFlow",
+        "expectComponents": ["appevents.OnAppEvent", "controls.SetVariable"],
+        "expectDescriptorIncludes": [".out.data.message"],
+        "expectPreservedComponentIds": true,
+        "expectPreservedLayout": true,
+        "minComponents": 2
+    },
+    {
+        "id": "multi-placeholder",
+        "prompt": "Build an Appmixer flow: on app event \"weather\" (example data: {\"temp\": 21, \"city\": \"Prague\"}), set a variable report with the text \"Temperature in <city>: <temp> C\" where <city> and <temp> come from the event data.",
+        "expectComponents": ["appevents.OnAppEvent", "controls.SetVariable"],
+        "minPlaceholders": 2
+    }
+]

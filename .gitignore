@@ -134,3 +134,13 @@ dist
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
+evals/results/
+build/
+
+# Local probing artifacts
+.token
+slack.json
+apps.json
+comps.json
+accounts.json
+flows.json
