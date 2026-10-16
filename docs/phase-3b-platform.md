@@ -1,7 +1,8 @@
 # Platform-team dependencies
 
-> As of 2026-08-17. The remote transport (streamable HTTP, env/bearer auth modes, Docker)
-> is finished in this repository and depends on nothing outside it. This document is the
+> As of 2026-10-16. Point 4 (mcptools) is done; the rest stands. The remote transport
+> (streamable HTTP, env/bearer auth modes, Docker) is finished in this repository and
+> depends on nothing outside it. This document is the
 > brief for the work the MCP server cannot solve on its own — raw material for tickets on
 > the platform team. Context: the "Appmixer MCP 2.0" analysis and
 > `docs/mcptools-endpoints.md`.
@@ -65,18 +66,22 @@ reverse proxy). For customers we want the MCP endpoint to be part of the tenant 
 **Acceptance:** a new tenant gets the MCP endpoint automatically, with a documented URL for
 customers.
 
-## 4. Merge mcptools (connectors PR #1117)
+## 4. Merge mcptools (connectors PR #1117) — done
 
-**Problem:** the MCP Gateway tools depend on an unmerged PR. Details and the defects found
-(missing `await` in `mcpListTools`, the JWT in the SSE query string, a hand-rolled token
-check outside the auth pipeline, a timeout returned as HTTP 200) are in
-`docs/mcptools-endpoints.md`.
+**Merged 2026-09-21.** The `appmixer.ai.mcptools` module is released and runs on
+`api-dev-automated-00001.dev.appmixer.ai`. Of the defects listed in
+`docs/mcptools-endpoints.md`, three are fixed: the missing `await` in `mcpListTools`, the
+timeout returned as HTTP 200 (the polling route is gone entirely) and the fragile
+`stateRemoveFromSet`. Two still stand and deserve a ticket of their own:
 
-**What we need:** fix the defects, merge, release; ideally replace the SSE query-string
-token with a short-lived ticket.
+- the JWT travels in the SSE query string,
+- the token is checked by a hand-rolled `jwt.verify` outside the auth pipeline.
 
-**Acceptance:** `TOOLS=mcpgateway` works against an officially released tenant, with an e2e
-test of the gateway lifecycle in CI.
+**Where it stands for us:** `TOOLS=mcpgateway` is covered by a live suite
+(`test/e2e-gateway.mjs`) that skips itself on a tenant without the module. It has not yet
+had a real run — the repository secrets still point at the `your-saas` test tenant, which
+does not have the module. Repointing them at the dev instance is three secret values and a
+user, and needs no change to `ci.yml`.
 
 ## 5. Finer-grained ACL (nice to have)
 
@@ -86,9 +91,22 @@ resources. Related to token scopes in point 2 — worth solving together.
 
 ## Suggested order
 
-1. **Personal access tokens and revocation (2)** — the largest security debt, and what makes
-   the bearer mode trustworthy.
-2. **OAuth ticket flow (1)** — unblocks claude.ai and the Anthropic directory.
-3. **Hosting (3)** — can run in parallel with 1 and 2.
-4. **mcptools (4)** — independent, any time.
-5. **ACL (5)** — together with token scopes.
+Ordered by the question that decides this commercially: what blocks the claude.ai remote
+connector. Only the first two items do.
+
+1. **Hosting (3)** — pure devops, no security design to settle, and claude.ai cannot reach a
+   URL that does not exist.
+2. **OAuth ticket flow (1)** — the second and last gate. The design can start before hosting
+   lands.
+3. **Revocable tokens (2)** — not a gate, but the security debt a public connector would
+   expose at scale. The revocable refresh token is the subset OAuth actually needs; full
+   personal access tokens with scopes can follow.
+4. **ACL (5)** — together with token scopes.
+
+The earlier order put tokens first, which was right while bearer mode was the only remote
+story. It is no longer: handing out 30-day JWTs is a reason not to publish widely, not a
+reason the connector cannot exist.
+
+The MCPB (desktop extension) route to claude.ai depends on none of this — it needs the npm
+release and docs PR #157, both inside our own control. See "Directory readiness" in
+`docs/gaps-and-roadmap.md`.
