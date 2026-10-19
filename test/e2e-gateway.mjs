@@ -89,6 +89,32 @@ const waitForTools = async (present) => {
     }
 };
 
+/**
+ * What the tenant itself thinks it published. On a failure this is the only way
+ * to tell the three causes apart: no gateway entry at all (the component never
+ * started), an entry whose `tools` is empty (the tool port was not understood,
+ * or a manifest could not be fetched), or an entry we fail to reconcile.
+ * The component logs its own view under the steps `component-tools`,
+ * `component-tool-manifest-inspect` and `component-tool-manifest-error`.
+ */
+const dumpDiagnostics = async (id) => {
+    try {
+        const res = await fetch(`${BASE}/plugins/appmixer/ai/mcptools/gateways`, {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+        console.log(`!! gateway registry (HTTP ${res.status}): ${await res.text()}`);
+    } catch (err) {
+        console.log(`!! gateway registry unreadable: ${err.message}`);
+    }
+    if (!id) return;
+    try {
+        const logs = await client.callTool({ name: 'get_flow_logs', arguments: { id, size: 100 } });
+        console.log(`!! flow logs: ${logs.content?.[0]?.text ?? '(none)'}`);
+    } catch (err) {
+        console.log(`!! flow logs unreadable: ${err.message}`);
+    }
+};
+
 // A tool component is configured through the transform of the port it is wired
 // to: a modifier reading `modelDefinedParameter` makes the field a tool
 // parameter, a literal lambda value makes it a static value the caller cannot
@@ -155,7 +181,13 @@ try {
     const changesBeforeStart = listChanged;
     await call('start_flow', { id: flowId });
 
-    const published = await waitForTools(true);
+    let published;
+    try {
+        published = await waitForTools(true);
+    } catch (err) {
+        await dumpDiagnostics(flowId);
+        throw err;
+    }
     const echoName = endingWith(published, `_${ECHO_LABEL}`)[0];
     const greetName = endingWith(published, `_${GREET_LABEL}`)[0];
     console.log(`-- published: ${echoName}, ${greetName}`);
