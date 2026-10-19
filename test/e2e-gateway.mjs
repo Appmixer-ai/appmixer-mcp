@@ -107,6 +107,19 @@ const dumpDiagnostics = async (id) => {
         console.log(`!! gateway registry unreadable: ${err.message}`);
     }
     if (!id) return;
+    // The descriptor as the tenant stored it: the gateway's own `tool` port
+    // wiring is what the component reads back through context.flowDescriptor,
+    // so a source entry lost on save would explain an empty tool list.
+    try {
+        const res = await fetch(`${BASE}/flows/${id}`, {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+        const body = await res.json();
+        const stored = body?.flow || body?.data?.flow || body;
+        console.log(`!! stored descriptor (HTTP ${res.status}): ${JSON.stringify(stored)}`);
+    } catch (err) {
+        console.log(`!! stored descriptor unreadable: ${err.message}`);
+    }
     try {
         const logs = await client.callTool({ name: 'get_flow_logs', arguments: { id, size: 100 } });
         console.log(`!! flow logs: ${logs.content?.[0]?.text ?? '(none)'}`);
