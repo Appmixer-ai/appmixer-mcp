@@ -9,7 +9,7 @@ on:
 
 permissions:
   contents: write   # create the GitHub release
-  id-token: write   # npm provenance
+  id-token: write   # npm trusted publishing + provenance
 
 jobs:
   release:
@@ -38,9 +38,12 @@ jobs:
       - run: npm test
       - run: npm run build:mcpb
 
+      # Trusted publishing (OIDC): npm authenticates this workflow through
+      # `id-token: write`, no NPM_TOKEN. It needs npm >= 11.5.1, newer than
+      # the npm bundled with Node 22 (npm 12 needs a newer Node 22).
+      - run: npm install -g npm@11
+
       - name: Publish to npm
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: npm publish --provenance --access public
 
       # The bundle is attached unsigned; `mcpb sign` needs a code-signing
