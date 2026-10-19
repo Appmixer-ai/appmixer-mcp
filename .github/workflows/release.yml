@@ -1,7 +1,11 @@
 name: Release
 
-# Tag a release with the version from package.json, e.g.:
-#   npm version minor && git push --follow-tags
+# Cut a release locally, then push it — the tag runs this workflow:
+#   npm run release && git push --follow-tags origin main
+# `npm run release` (commit-and-tag-version) picks the bump from the
+# conventional commits since the last tag, bumps every file in .versionrc.json,
+# updates CHANGELOG.md, commits and tags. Force a bump with
+# `npm run release -- --release-as minor` (or an exact version).
 on:
   push:
     tags: ['v*']
