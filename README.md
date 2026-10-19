@@ -212,6 +212,27 @@ Run it before releases or after changing the authoring guide, tool descriptions
 or output formats — it is the regression test for the parts of this server that
 unit tests cannot cover.
 
+### Releasing
+
+Releases are cut locally with `npm run release`
+([commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version))
+and published by GitHub Actions:
+
+```bash
+git checkout main && git pull && npm install
+npm run release                    # bump, CHANGELOG, release commit + tag
+git push --follow-tags origin main # the v* tag runs .github/workflows/release.yml
+```
+
+- The bump comes from the [conventional commits](https://www.conventionalcommits.org/)
+  since the last tag (`fix:` → patch, `feat:` → minor, `!` → major). Force one
+  with `npm run release -- --release-as minor` (or an exact version).
+- `.versionrc.json` keeps `package.json`, `package-lock.json`,
+  `mcpb/manifest.json` and `src/version.ts` on the same version.
+- The workflow builds, tests, publishes to npm through trusted publishing
+  (OIDC, no npm token) and attaches the `.mcpb` bundle to a GitHub release.
+  Never run `npm publish` locally.
+
 ## Project documentation
 
 - [`docs/status.md`](docs/status.md) — where the work stands and what it is waiting on
