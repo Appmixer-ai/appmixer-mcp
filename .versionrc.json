@@ -1,0 +1,11 @@
+{
+    "bumpFiles": [
+        { "filename": "package.json", "type": "json" },
+        { "filename": "package-lock.json", "type": "json" },
+        { "filename": "mcpb/manifest.json", "type": "json" },
+        { "filename": "src/version.ts", "updater": "scripts/version-ts-updater.cjs" }
+    ],
+    "packageFiles": [
+        { "filename": "package.json", "type": "json" }
+    ]
+}
