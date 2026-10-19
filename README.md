@@ -33,9 +33,10 @@ Add the server to your MCP client. A typical configuration:
 With Claude Code:
 
 ```bash
-claude mcp add appmixer npx appmixer-mcp \
+claude mcp add appmixer \
   -e APPMIXER_BASE_URL="https://api.YOUR_TENANT.appmixer.cloud" \
-  -e APPMIXER_ACCESS_TOKEN="..."
+  -e APPMIXER_ACCESS_TOKEN="..." \
+  -- npx appmixer-mcp
 ```
 
 ## Desktop bundle (MCPB)
