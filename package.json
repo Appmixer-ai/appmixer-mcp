@@ -25,7 +25,8 @@
         "dev": "tsx src/index.ts",
         "test": "vitest run",
         "test:watch": "vitest",
-        "prepublishOnly": "npm run build && npm test"
+        "prepublishOnly": "npm run build && npm test",
+        "release": "commit-and-tag-version"
     },
     "homepage": "https://github.com/Appmixer-ai/appmixer-mcp",
     "repository": {
@@ -50,6 +51,7 @@
     "devDependencies": {
         "@types/express": "^5.0.6",
         "@types/node": "^22.0.0",
+        "commit-and-tag-version": "12.7.1",
         "esbuild": "^0.28.2",
         "tsx": "^4.19.0",
         "typescript": "^5.7.0",
