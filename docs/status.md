@@ -6,19 +6,24 @@
 > Updated 2026-10-14: the connectors PR behind the MCP Gateway tools merged
 > and the module is deployed on a dev instance, so the gateway can finally be
 > tested live. Nothing else moved.
+> Updated 2026-10-19: v2.0.0 is published on npm. What is left is the
+> customer documentation, one live test that has never run, and the platform
+> work claude.ai needs.
 
 ## The short version
 
-v2 is feature-complete and verified, and it is waiting on people, not on
-code. Everything lives on one branch behind one pull request that has not
-been reviewed yet. Nothing is published, so no user can benefit from any of
-it until that PR merges and v2 goes to npm.
+v2 is released. `appmixer-mcp@2.0.0` went to npm on 2026-10-19 with
+provenance, and the `.mcpb` desktop bundle is attached to the GitHub release.
+Three things are left: the customer documentation, the one live test that has
+never actually run, and the platform work that claude.ai connectors need.
 
 ## What exists
 
-**Branch `feat/v2-core`** on the fork `petrolivka/appmixer-mcp`, 23 commits
-ahead of the upstream `main` (which is still the v1 code), CI green on every
-push including the live suites.
+**Merged into the upstream `main`** as `a02ab48` on 2026-10-16 — PR #5, 26
+commits from the fork branch `feat/v2-core`, merged by David Durman — with CI
+green on every push including the live suites. Since 2026-10-19 it is also
+what `npx appmixer-mcp` installs: `appmixer-mcp@2.0.0` is the `latest` tag on
+npm, published with SLSA provenance by `release.yml`.
 
 The server is a TypeScript rewrite on the current MCP SDK with **37 tools**
 in three families — operating flows, authoring them, and the data around
@@ -36,14 +41,35 @@ eval tasks scoring real agents — 14/14 on both Sonnet and Haiku.
 
 | Item | Where | Waiting on |
 |---|---|---|
-| Code review and merge | [appmixer-mcp#5](https://github.com/Appmixer-ai/appmixer-mcp/pull/5) — open, 23 commits, 0 reviews | a reviewer |
-| npm release of v2 | after the merge: `npm version <level>` and push the tag; `release.yml` does the rest | the merge |
-| Customer documentation | [appmixer-docs-gitbook#157](https://github.com/Appmixer-ai/appmixer-docs-gitbook/pull/157) — draft, base `6.5` | the npm release (the page describes v2; today `npx appmixer-mcp` still installs 1.0.8) |
-| MCP Gateway tools, live | [appmixer-connectors#1117](https://github.com/Appmixer-ai/appmixer-connectors/pull/1117) — **merged 2026-09-21** into `dev`; the module runs on `api-dev-automated-00001.dev.appmixer.ai` | the CI secrets being repointed at that instance (decided 2026-10-14) and a gateway lifecycle suite being written |
-| claude.ai connector support | [`phase-3b-platform.md`](phase-3b-platform.md) | the platform team (OAuth bridge, personal access tokens) |
+| Code review and merge | [appmixer-mcp#5](https://github.com/Appmixer-ai/appmixer-mcp/pull/5) — **merged 2026-10-16** as `a02ab48` | done |
+| npm release of v2 | **published 2026-10-19** — `appmixer-mcp@2.0.0`, tag `v2.0.0`, `.mcpb` attached to the release | done |
+| Customer documentation | [appmixer-docs-gitbook#157](https://github.com/Appmixer-ai/appmixer-docs-gitbook/pull/157) — draft, base `6.5` | a reviewer; the release it was waiting for has happened, so the page needs checking against what shipped and taking out of draft |
+| MCP Gateway tools, live | [appmixer-connectors#1117](https://github.com/Appmixer-ai/appmixer-connectors/pull/1117) — **merged 2026-09-21** into `dev`; the module runs on `api-dev-automated-00001.dev.appmixer.ai` | the CI secrets being repointed at that instance (decided 2026-10-14); the lifecycle suite exists (`test/e2e-gateway.mjs`) and skips itself until then |
+| claude.ai connector support | [`phase-3b-platform.md`](phase-3b-platform.md) | the platform team — hosting and the OAuth ticket flow are the only two gates; revocable tokens are debt, not a gate |
 
 The platform items have the longest lead time. Filing them as tickets now
 means they can run in parallel with everything else.
+
+### How a release is cut
+
+Releases are cut locally and published by `release.yml`; the README's
+"Releasing" section is the reference. In short: `npm run release`
+(commit-and-tag-version) picks the bump from the conventional commits since
+the last tag, bumps every file listed in `.versionrc.json`, writes the
+changelog and tags; `git push --follow-tags origin main` then runs the
+workflow, which builds, tests, publishes to npm through **trusted publishing
+(OIDC, no npm token)** and attaches the `.mcpb` bundle to a GitHub release.
+Never `npm publish` by hand.
+
+2.0.0 went out that way on 2026-10-19: tag pushed by Vladimir Talas, npm
+`latest` now 2.0.0 with SLSA provenance, and a 256,589-byte bundle on the
+release — byte-identical in size to the local build.
+
+One constraint worth remembering: we have `pull` access only on
+`Appmixer-ai/appmixer-mcp` and are not among the npm package's owners
+(martin, daviddurman, vladimir.talas, martinkrcmar), so we cannot cut a
+release ourselves. Someone with push does it, which is a one-command job but
+needs asking.
 
 ### Where the module is deployed
 
@@ -101,16 +127,22 @@ against, so the findings there need re-checking against the final code:
 
 ## Picking it back up
 
-1. **Release first.** Merge #5, tag a release, confirm the workflow published
-   to npm and attached the `.mcpb` to the GitHub release, then take
-   docs#157 out of draft and ask for review.
+1. **Customer documentation.** docs#157 was written before the release and
+   has been in draft since; check it against what actually shipped (37 tools,
+   the three transports, the install command) before taking it out of draft
+   and asking for review. After it merges, the MCPB directory listing is
+   reachable — every other criterion in
+   [`gaps-and-roadmap.md`](gaps-and-roadmap.md) is already met, only test
+   credentials for the reviewer need preparing. That route to claude.ai waits
+   on nothing in core.
 2. **Test the gateway live** — possible today against
-   `api-dev-automated-00001.dev.appmixer.ai`. Build a flow with an
-   MCPGateway component there, run the stdio and HTTP smoke suites with
-   `TOOLS=api,mcpgateway`, add the gateway lifecycle (start/stop flow →
-   `tools/list_changed`) to the e2e suite, and bring
-   `docs/mcptools-endpoints.md` in line with the merged code. The CI secrets
-   move to the dev instance as part of this step.
+   `api-dev-automated-00001.dev.appmixer.ai`. The lifecycle suite is written
+   (`test/e2e-gateway.mjs` builds a flow with an MCPGateway, starts it,
+   asserts the published tools and the `tools/list_changed` notification,
+   calls them, stops the flow and asserts retraction), but it has never had
+   a real run: it skips itself on a tenant without the module. Repoint the
+   CI secrets at the dev instance, run it, and bring
+   `docs/mcptools-endpoints.md` in line with the merged code.
 3. **Then let usage steer.** The most useful input so far came from actually
    using the thing — a hand-written "order triage" brief exposed three gaps
    in one afternoon that no amount of desk review had found. Once the team
