@@ -16,13 +16,44 @@ import { ToolListChangedNotificationSchema } from '@modelcontextprotocol/sdk/typ
 const BASE = process.env.APPMIXER_BASE_URL;
 if (!BASE) throw new Error('APPMIXER_BASE_URL is required.');
 
-// The action component used as a gateway tool. MockValue is the smallest
-// component that echoes an input field, which is all a tool call has to prove.
-const TOOL_COMPONENT = 'appmixer.utils.controls.MockValue';
 const ECHO_LABEL = 'EchoTool';
 const GREET_LABEL = 'GreetTool';
 const GREETING = 'Hello, Appmixer!';
+const ECHO_INPUT = 'hello from e2e';
 const APPEARANCE_TIMEOUT_MS = 90_000;
+
+/**
+ * The action component used as a gateway tool, in order of preference.
+ *
+ * It cannot be hard-coded: the gateway builds every tool definition from the
+ * manifest it reads back through GET /components?selector=TYPE as the flow's own
+ * user, and gridd filters a manifest marked `private` out for a user without the
+ * `private` scope. The selector then answers [], the module's fetchManifest
+ * returns undefined without throwing, and the gateway publishes no tools at all
+ * and logs nothing about it — which is why `appmixer.utils.controls.MockValue`
+ * (private, and what the module's own E2E fixture uses) fails here. Each
+ * candidate carries the one field it echoes; the first one this user can see wins.
+ */
+const TOOL_CANDIDATES = [
+    {
+        type: 'appmixer.utils.xml.XmlToJson',
+        field: 'xml',
+        echoInput: `<value>${ECHO_INPUT}</value>`,
+        staticInput: `<greeting>${GREETING}</greeting>`
+    },
+    {
+        type: 'appmixer.utils.xml.JsonToXml',
+        field: 'json',
+        echoInput: `{"value":"${ECHO_INPUT}"}`,
+        staticInput: `{"greeting":"${GREETING}"}`
+    },
+    {
+        type: 'appmixer.utils.controls.MockValue',
+        field: 'value',
+        echoInput: ECHO_INPUT,
+        staticInput: GREETING
+    }
+];
 
 /** A token the way an MCP client would hold one: given, or obtained by login. */
 const token = process.env.APPMIXER_ACCESS_TOKEN || await (async () => {
@@ -48,6 +79,33 @@ if (probe.status === 404) {
     process.exit(0);
 }
 if (!probe.ok) throw new Error(`Gateway registry unreachable: HTTP ${probe.status}`);
+
+// Read the manifest exactly the way the gateway will, so an invisible component
+// is reported here instead of as a 90s timeout with no explanation.
+const manifestVisible = async (type) => {
+    const res = await fetch(`${BASE}/components?selector=${encodeURIComponent(type)}`, {
+        headers: { Authorization: `Bearer ${token}` }
+    });
+    if (!res.ok) return false;
+    const parsed = await res.json();
+    return Array.isArray(parsed) ? parsed.length > 0 : Boolean(parsed);
+};
+
+let toolComponent;
+for (const candidate of TOOL_CANDIDATES) {
+    if (await manifestVisible(candidate.type)) {
+        toolComponent = candidate;
+        break;
+    }
+}
+if (!toolComponent) {
+    throw new Error('No candidate tool component is visible to this user: ' +
+        `${TOOL_CANDIDATES.map(c => c.type).join(', ')}. The gateway builds its tool ` +
+        'definitions from the component manifest, so a component the user cannot see ' +
+        'publishes no tool. Install one of those modules, or grant the user the ' +
+        'private scope so MockValue becomes visible.');
+}
+console.log(`-- tool component: ${toolComponent.type} (field ${toolComponent.field})`);
 
 const transport = new StdioClientTransport({
     command: process.execPath,
@@ -96,6 +154,9 @@ const waitForTools = async (present) => {
  * or a manifest could not be fetched), or an entry we fail to reconcile.
  * The component logs its own view under the steps `component-tools`,
  * `component-tool-manifest-inspect` and `component-tool-manifest-error`.
+ * `component-tools: 0` with neither manifest step logged means the manifest
+ * lookup came back empty, which the module skips silently — see the visibility
+ * check on TOOL_CANDIDATES above.
  */
 const dumpDiagnostics = async (id) => {
     try {
@@ -132,15 +193,15 @@ const dumpDiagnostics = async (id) => {
 // to: a modifier reading `modelDefinedParameter` makes the field a tool
 // parameter, a literal lambda value makes it a static value the caller cannot
 // set. Mirrors the module's own E2E flow.
-const toolTransform = (field, modelDefined, staticValue) => ({
+const toolTransform = (modelDefined) => ({
     in: {
         gateway: {
             tool: {
                 type: 'json2new',
                 modifiers: modelDefined
-                    ? { [field]: { param: { variable: '$.gateway.tool.modelDefinedParameter', functions: [] } } }
+                    ? { [toolComponent.field]: { param: { variable: '$.gateway.tool.modelDefinedParameter', functions: [] } } }
                     : {},
-                lambda: { [field]: modelDefined ? '{{{param}}}' : staticValue }
+                lambda: { [toolComponent.field]: modelDefined ? '{{{param}}}' : toolComponent.staticInput }
             }
         }
     }
@@ -155,17 +216,17 @@ const flow = {
         x: 300, y: 200
     },
     echo: {
-        type: TOOL_COMPONENT,
+        type: toolComponent.type,
         label: ECHO_LABEL,
         source: { in: { gateway: ['tool'] } },
-        config: { transform: toolTransform('value', true) },
+        config: { transform: toolTransform(true) },
         x: 200, y: 400
     },
     greet: {
-        type: TOOL_COMPONENT,
+        type: toolComponent.type,
         label: GREET_LABEL,
         source: { in: { gateway: ['tool'] } },
-        config: { transform: toolTransform('value', false, GREETING) },
+        config: { transform: toolTransform(false) },
         x: 500, y: 400
     }
 };
@@ -217,17 +278,17 @@ try {
     const greet = tools.find(tool => tool.name === greetName);
 
     if (echo.title !== ECHO_LABEL) throw new Error(`Expected title ${ECHO_LABEL}, got ${echo.title}`);
-    if (!echo.inputSchema?.properties?.value) {
+    if (!echo.inputSchema?.properties?.[toolComponent.field]) {
         throw new Error(`Model-defined parameter missing from the echo tool schema: ` +
             JSON.stringify(echo.inputSchema));
     }
     // The static field must not be offered to the model.
-    if (greet.inputSchema?.properties?.value) {
+    if (greet.inputSchema?.properties?.[toolComponent.field]) {
         throw new Error('The static field is exposed as a tool parameter.');
     }
 
-    const echoed = await call(echoName, { value: 'hello from e2e' });
-    if (!echoed.includes('hello from e2e')) {
+    const echoed = await call(echoName, { [toolComponent.field]: toolComponent.echoInput });
+    if (!echoed.includes(ECHO_INPUT)) {
         throw new Error(`Echo tool did not return its input: ${echoed}`);
     }
     const greeted = await call(greetName, {});
